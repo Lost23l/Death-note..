@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Death Note</title>
+<style>
+:root{--paper:#EADFCD;--paper-dark:#DCCCAE;--paper-line:#CBB99B;--ink:#1A1410;--ink-soft:#333333;--black:#0A0A0A;--blood:#8E1600;--muted:#5C5C5C;--apple:#B3121B;--leaf:#2E6B30;--gold:#F2C230}
+*{box-sizing:border-box}body{margin:0;background:var(--black);font-family:system-ui,-apple-system,sans-serif;color:var(--ink);min-height:100vh;display:flex;justify-content:center;align-items:center}
+#app{width:100%;max-width:480px;height:100vh;max-height:760px;background:var(--paper);position:relative;overflow:hidden;box-shadow:0 0 30px rgba(0,0,0,0.8);display:flex;flex-direction:column}
+.screen{flex:1;display:flex;flex-direction:column;padding:20px;overflow-y:auto;position:relative}
+.cover{position:absolute;inset:0;background:var(--black);color:var(--paper);z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.6s ease}
+.cover.open{transform:translateX(-100%);pointer-events:none}
+.gothic{font-family:'Times New Roman',serif;font-weight:bold;letter-spacing:2px}
+.hand{font-family:'Courier New',monospace}
+h1,h2{margin:0 0 10px 0}
+.btn{background:var(--black);color:var(--paper);border:none;padding:12px 20px;font-size:16px;border-radius:4px;cursor:pointer;margin:5px 0;text-align:center}
+.btn.blood{background:var(--blood);color:white}
+.btn.paper{background:var(--paper-dark);color:var(--ink);border:1px solid var(--paper-line)}
+input, textarea{width:100%;padding:10px;background:var(--paper-dark);border:1px solid var(--paper-line);color:var(--ink);font-size:16px;margin:8px 0;border-radius:4px}
+textarea{resize:none;height:80px}
+.rule-box{margin-bottom:15px;border-left:3px solid var(--blood);padding-left:10px}
+.header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--paper-line);padding-bottom:10px;margin-bottom:15px}
+.footer{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:10px;border-top:1px solid var(--paper-line)}
+.log-item{background:var(--paper-dark);padding:10px;margin-bottom:8px;border-radius:4px;border-left:4px solid var(--blood)}
+</style>
+</head>
+<body>
+
+<div id="app">
+<!-- Écran de Couverture -->
+<div id="cover-screen" class="cover" onclick="openCover()">
+<div style="text-align:center">
+<h1 class="gothic" style="font-size:48px;margin-bottom:0">DEATH</h1>
+<h1 class="gothic" style="font-size:48px;margin-top:0">NOTE</h1>
+<p class="hand" style="color:var(--muted);margin-top:40px;animation:pulse 1.5s infinite">Clique pour ouvrir</p>
+</div>
+</div>
+
+<!-- Contenu Principal (Le Cahier) -->
+<div id="main-screen" class="screen" style="display:none">
+<div class="header">
+<span class="gothic" style="font-size:20px">Death Note</span>
+<div>
+<button class="btn paper" style="padding:5px 10px;font-size:12px" onclick="switchTab('notebook')">Cahier</button>
+<button class="btn paper" style="padding:5px 10px;font-size:12px" onclick="switchTab('history')">Historique</button>
+</div>
+</div>
+
+<div id="tab-notebook" class="tab-content">
+<h2 class="gothic">How to use it</h2>
+<div class="rule-box">
+<p><b>I.</b> L'humain dont le nom est écrit dans ce cahier meurt.</p>
+<p><b>II.</b> Le cahier n'a aucun effet si celui qui écrit n'a pas le visage de la personne en tête.</p>
+<p><b>III.</b> Si la cause de la mort est écrite dans les 40 secondes, elle se produira.</p>
+<p><b>IV.</b> Sans cause précisée, la personne meurt simplement d'une crise cardiaque.</p>
+</div>
+<button class="btn blood" onclick="showWriteScreen()">✒ Écrire un nom</button>
+</div>
+
+<div id="tab-write" class="tab-content" style="display:none">
+<h2 class="gothic">Inscrire un nom</h2>
+<label>Nom de la victime :</label>
+<input type="text" id="v-name" placeholder="Ex: John Doe">
+<label>Cause de la mort (laisser vide = crise cardiaque) :</label>
+<input type="text" id="v-cause" placeholder="Ex: Accident de voiture">
+<label>Circonstances :</label>
+<textarea id="v-details" placeholder="Détails optionnels..."></textarea>
+<button class="btn blood" onclick="submitName()">Inscrire</button>
+<button class="btn paper" onclick="switchTab('notebook')">Retour</button>
+</div>
+
+<div id="tab-countdown" class="tab-content" style="display:none;text-align:center;justify-content:center">
+<h2 id="cd-name" class="gothic" style="font-size:28px">Nom</h2>
+<p>La mort est en cours...</p>
+<div id="cd-timer" class="gothic" style="font-size:64px;color:var(--blood);margin:20px 0">40</div>
+<p class="hand">secondes restantes</p>
+<button class="btn blood" onclick="triggerDeath()">Mourir maintenant</button>
+</div>
+
+<div id="tab-death" class="tab-content" style="display:none;background:var(--blood);color:white;justify-content:center;align-items:center;text-align:center">
+<h1 class="gothic" style="font-size:36px" id="death-title">MORT</h1>
+<p id="death-reason" style="font-size:18px;margin:20px 0"></p>
+<p class="hand" style="font-style:italic">« Hyuk hyuk hyuk… Les humains sont tellement intéressants. »</p>
+<button class="btn paper" style="color:var(--black);margin-top:30px" onclick="switchTab('notebook')">Retourner au cahier</button>
+</div>
+
+<div id="tab-history" class="tab-content" style="display:none">
+<h2 class="gothic">Historique des morts</h2>
+<div id="history-list" style="overflow-y:auto;max-height:500px"></div>
+</div>
+</div>
+</div>
+
+<script>
+let currentEntry = {name: "", cause: "", details: ""};
+let timerInterval = null;
+let timeLeft = 40;
+let entries = JSON.parse(localStorage.getItem("death_note_entries") || "[]");
+
+function openCover() {
+document.getElementById("cover-screen").classList.add("open");
+document.getElementById("main-screen").style.display = "flex";
+}
+
+function switchTab(tabName) {
+['notebook', 'write', 'countdown', 'death', 'history'].forEach(t => {
+document.getElementById('tab-' + t).style.display = 'none';
+});
+document.getElementById('tab-' + tabName).style.display = 'flex';
+if(tabName === 'history') renderHistory();
+}
+
+function showWriteScreen() {
+document.getElementById('v-name').value = '';
+document.getElementById('v-cause').value = '';
+document.getElementById('v-details').value = '';
+switchTab('write');
+}
+
+function submitName() {
+const name = document.getElementById('v-name').value.trim();
+if(!name) {
+alert("Il faut écrire un nom… et avoir son visage en tête.");
+return;
+}
+currentEntry = {
+id: Date.now(),
+name: name,
+cause: document.getElementById('v-cause').value.trim() || "Crise cardiaque",
+details: document.getElementById('v-details').value.trim(),
+date: new Date().toLocaleDateString()
+};
+
+entries.unshift(currentEntry);
+localStorage.setItem("death_note_entries", JSON.stringify(entries));
+
+document.getElementById('cd-name').innerText = currentEntry.name;
+timeLeft = 40;
+document.getElementById('cd-timer').innerText = timeLeft;
+switchTab('countdown');
+
+timerInterval = setInterval(() => {
+timeLeft--;
+document.getElementById('cd-timer').innerText = timeLeft;
+if(timeLeft <= 0) {
+clearInterval(timerInterval);
+triggerDeath();
+}
+}, 1000);
+}
+
+function triggerDeath() {
+clearInterval(timerInterval);
+document.getElementById('death-title').innerText = currentEntry.name + " est mort(e)";
+document.getElementById('death-reason').innerText = currentEntry.cause + (currentEntry.details ? " — " + currentEntry.details : "");
+switchTab('death');
+}
+
+function renderHistory() {
+const list = document.getElementById('history-list');
+list.innerHTML = "";
+if(entries.length === 0) {
+list.innerHTML = "<p class='hand'>Aucun nom écrit pour l'instant.</p>";
+return;
+}
+entries.forEach(e => {
+const div = document.createElement('div');
+div.className = 'log-item';
+div.innerHTML = <b&gt;${e.name}</b><br><span style="font-size:14px;color:var(--ink-soft)">${e.cause}&lt;/span&gt;&lt;br&gt;&lt;small style="color:var(--muted)"&gt;${e.date}&lt;/small>;
+list.appendChild(div);
+});
+}
+</script>
+</body>
+</html>
